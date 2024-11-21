@@ -10,12 +10,16 @@ class UserFilter(FilterSet):
             ("-name", "name_desc"),  # Descending order by name
             ("name_ar", "name_ar"),  # Ascending order by name_ar
             ("-name_ar", "name_ar_desc"),  # Descending order by name_ar
+            ("id_num","id_num"),
+            ("-id_num","id_num_desc"),
         ),
         field_labels={
             "name": "Name (ascending)",
             "name_desc": "Name (descending)",
             "name_ar": "Name (Arabic ascending)",
             "name_ar_desc": "Name (Arabic descending)",
+            "id_num":"id_num (ascending)",
+            "id_num_desc":"id_num (descending)"
         },
     )
 

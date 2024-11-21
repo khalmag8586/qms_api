@@ -124,8 +124,15 @@ class UserListView(generics.ListAPIView):
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserFilter
-    search_fields = ["name", "name_ar", "mobile_number", "email", "identification"]
-    ordering_fields = ["name_ar"]
+    search_fields = [
+        "name",
+        "name_ar",
+        "mobile_number",
+        "email",
+        "identification",
+        "id_num",
+    ]
+    ordering_fields = ["name_ar", "name", "id_num"]
 
 
 class DeletedUserView(generics.ListAPIView):
@@ -137,7 +144,7 @@ class DeletedUserView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserFilter
     search_fields = ["name", "name_ar", "mobile_number", "email", "identification"]
-    ordering_fields = ["name_ar"]
+    ordering_fields = ["name_ar", "name", "id_num"]
 
 
 class UserRetrieveView(generics.RetrieveAPIView):
@@ -386,7 +393,7 @@ class UserDeleteView(APIView):
 # User Dialogs
 class UserDialogView(generics.ListAPIView):
     serializer_class = UserDialogSerializer
-    queryset = User.objects.filter(is_deleted=False,is_superuser=False)
+    queryset = User.objects.filter(is_deleted=False, is_superuser=False)
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 

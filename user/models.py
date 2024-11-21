@@ -98,6 +98,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         primary_key=True,
     )
     email = models.EmailField(max_length=255, unique=True)
+    id_num = models.PositiveIntegerField(
+        unique=True, editable=False, blank=True, null=True
+    )
     name = models.CharField(max_length=255)
     name_ar = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -143,8 +146,29 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "email"
 
+    # def save(self, *args, **kwargs):
+    #     super().save(*args, **kwargs)
+    #     # Check if the photo exists and its size exceeds the maximum allowed size
+    #     if self.photo:
+    #         photo_size = self.photo.size  # Size in bytes
+    #         max_size_bytes = 1024 * 1024  # 1 MB
+
+    #         if photo_size > max_size_bytes:
+    #             # Resize the photo
+    #             self.resize_photo()
+
+    #         # Resize and save the avatar image
+    #         if not self.avatar:
+    #             self.resize_and_save_avatar()
     def save(self, *args, **kwargs):
+        # Assign the next identification number if it hasn't been set
+        if not self.id_num:
+            # Find the maximum identification number currently in the database
+            max_id = User.objects.aggregate(models.Max("id_num"))["id_num__max"]
+            self.id_num = max_id + 1 if max_id else 1000
+
         super().save(*args, **kwargs)
+
         # Check if the photo exists and its size exceeds the maximum allowed size
         if self.photo:
             photo_size = self.photo.size  # Size in bytes
@@ -154,7 +178,7 @@ class User(AbstractBaseUser, PermissionsMixin):
                 # Resize the photo
                 self.resize_photo()
 
-            # Resize and save the avatar image
+            # Resize and save the avatar image if it's not already set
             if not self.avatar:
                 self.resize_and_save_avatar()
 
@@ -208,5 +232,3 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         def __str__(self):
             return self.email
-
-

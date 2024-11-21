@@ -39,6 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "password",
+            "id_num",
             "name",
             "name_ar",
             "created_at",
@@ -60,7 +61,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_staff",
             "is_active",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id","id_num"]
         extra_kwargs = {
             # "password": {"write_only": True, "min_length": 8},
             "password": {
