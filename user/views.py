@@ -4,6 +4,10 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.core.mail import send_mail
+from django.conf import settings
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -24,6 +28,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 import uuid
 import csv
+import logging
+import json
+import string
+import random
 
 from user.models import (
     User,
@@ -411,6 +419,75 @@ class UserGenderDialogView(APIView):
 
         serializer = UserGenderChoiceSerializer(gender_choices, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+logger = logging.getLogger(__name__)
+
+
+@csrf_exempt
+def forgot_password(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)  # Parse the JSON request body
+            email = data.get("email")
+            if not email:
+                return JsonResponse(
+                    {"detail": _("Email is required.")},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            customer = get_object_or_404(User, email=email)
+
+            # Generate a new password
+            def generate_password(length=8):
+                lowercase_chars = string.ascii_lowercase
+                uppercase_chars = string.ascii_uppercase
+                digit_chars = string.digits
+
+                password = [
+                    random.choice(lowercase_chars),
+                    random.choice(uppercase_chars),
+                    random.choice(digit_chars),
+                ]
+
+                for _ in range(length - 3):
+                    password.append(
+                        random.choice(lowercase_chars + uppercase_chars + digit_chars)
+                    )
+
+                random.shuffle(password)
+
+                return "".join(password)
+
+            new_password = generate_password(8)
+
+            # Update user's password
+            customer.set_password(new_password)
+            customer.save()
+
+            # Send email with new password
+            send_mail(
+                "Password Reset",
+                f"Your new password is: {new_password}",
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+
+            logger.info(f"Password reset for {email} successful.")
+            return JsonResponse(
+                {"detail": _("Password reset email sent successfully.")}
+            )
+        except Exception as e:
+            logger.error(f"Error during password reset: {str(e)}")
+            return JsonResponse(
+                {"detail": _("An error occurred. Please try again later.")},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+    else:
+        return JsonResponse(
+            {"detail": _("Method not allowed.")},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
 
 # Exporting user model

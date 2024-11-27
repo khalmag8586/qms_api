@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 import environ
 from django.utils.translation import gettext_lazy as _
+from decouple import config
 
 env = environ.Env()
 environ.Env.read_env()
@@ -50,13 +51,36 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "djoser",
+    "channels",
     "user",
     "apps.permissions_api",
+    "apps.contact_us",
+    "apps.about_us",
     "apps.service",
     "apps.counter",
     "apps.ticket",
     "apps.rating",
 ]
+
+ASGI_APPLICATION = "qms_api.asgi.application"
+
+# Add a WebSocket backend (e.g., Redis for production)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                "redis://default:9UuH504YfwmLBZczZutDZjwCm5A7ZTE6@redis-13656.c259.us-central1-2.gce.redns.redis-cloud.com:13656"
+            ],
+            "capacity": 1000,  # Max messages in a channel
+            "expiry": 60,  # Message expiry time (seconds)
+        },
+    },
+}
+
+ENVIRONMENT = config("ENVIRONMENT", default="development")
+
+
 # email settings for mailhog
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "127.0.0.1"

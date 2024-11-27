@@ -14,6 +14,7 @@ from user.views import (
     LoginView,
     UserDialogView,
     UserGenderDialogView,
+    forgot_password,
     ExportUsersToCSV,
 )
 
@@ -37,5 +38,6 @@ urlpatterns = [
     path(
         "user_gender_dialog/", UserGenderDialogView.as_view(), name="user-gender-dialog"
     ),
+    path("forgot_password/", forgot_password, name="forgot_password"),
     path("employee_export_csv/", ExportUsersToCSV.as_view(), name="export-employees"),
 ]

@@ -8,3 +8,6 @@ django-environ==0.11.2
 djoser==2.2.0
 psycopg2==2.9.9
 paypalrestsdk
+channels
+channels_redis
+python-decouple

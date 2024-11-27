@@ -2,6 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -9,7 +10,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-
 from django.db.models import Q, Max
 
 from apps.ticket.models import Ticket
@@ -177,14 +177,17 @@ class CallNextCustomerView(generics.UpdateAPIView):
         return current_customer
 
     def update_ticket(self, ticket):
-
-        # Update the ticket fields after it's called
-        ticket.called_at = timezone.now()
-        ticket.status = "in_progress"  # Assuming 'in_progress' is the status when the ticket is being served
-        ticket.served_by = self.request.user
-        ticket.counter = Counter.objects.get(employee=self.request.user)
-
-        ticket.save()
+        try:
+            # Update the ticket fields after it's called
+            ticket.called_at = timezone.now()
+            ticket.status = "in_progress"  # Assuming 'in_progress' is the status when the ticket is being served
+            ticket.served_by = self.request.user
+            ticket.counter = Counter.objects.get(employee=self.request.user)
+            ticket.save()
+        except Counter.DoesNotExist:
+            raise ValidationError(
+                {"detail": _("Counter does not exist for the logged-in user.")}
+            )
 
     def complete_ticket(self, ticket):
         """Mark a ticket as completed"""
@@ -219,12 +222,18 @@ class TicketRedirectToAnotherCounter(generics.UpdateAPIView):
             )
         # Update the counter for the ticket
         try:
-            ticket.counter = counter
+            # ticket.counter = counter
+            ticket.redirect_to = counter
             ticket.save()
         except ValueError:
-            return Response({"detail": _("Invalid counter ID provided")}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": _("Invalid counter ID provided")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        return Response({"detail": _("Ticket redirected successfully")}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": _("Ticket redirected successfully")}, status=status.HTTP_200_OK
+        )
 
 
 class TicketInCounter(generics.ListAPIView):

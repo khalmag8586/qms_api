@@ -7,6 +7,7 @@ class TicketSerializer(serializers.ModelSerializer):
     service_name_ar = serializers.CharField(source="service.name_ar", read_only=True)
     service_symbol = serializers.CharField(source="service.symbol", read_only=True)
     served_by_name = serializers.CharField(source="served_by.name", read_only=True)
+    redirect_to_number = serializers.CharField(source="redirect_to.number", read_only=True)
     counter_number = serializers.CharField(source="counter.number", read_only=True)
 
     class Meta:
@@ -32,6 +33,7 @@ class TicketSerializer(serializers.ModelSerializer):
             "counter_number",
             "hold_reason",
             "redirect_to",
+            "redirect_to_number",
             "customers_ahead",
             "avg_wait_time",
         ]
@@ -49,6 +51,7 @@ class TicketSerializer(serializers.ModelSerializer):
             "counter_number",
             "hold_reason",
             "redirect_to",
+            "redirect_to_name",
             "customers_ahead",
             "avg_wait_time",
         ]
@@ -57,7 +60,8 @@ class TicketSerializer(serializers.ModelSerializer):
 class CallNextCustomerSerializer(serializers.Serializer):
     counter_id = serializers.UUIDField()
 
+
 class TicketRedirectSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Ticket
-        fields=["id","counter"]
+        model = Ticket
+        fields = ["id", "counter"]

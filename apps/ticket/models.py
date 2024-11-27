@@ -10,6 +10,8 @@ from django.utils.translation import gettext_lazy as _
 from apps.counter.models import Counter
 from apps.service.models import Service
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 class Ticket(models.Model):
     TICKET_STATUS_CHOICES = [
@@ -111,3 +113,20 @@ class Ticket(models.Model):
             self.number = f"{self.service.symbol}-{today_date.strftime('%Y%m%d')}-{ticket_count_today}"
         super().save(*args, **kwargs)
 
+    def complete_ticket(self):
+        """Mark this ticket as completed."""
+        self.status = "completed"
+        self.save()
+    def notify_ticket_update(self):
+        """Send a WebSocket notification about this ticket's update."""
+        channel_layer = get_channel_layer()
+        data = {
+            "type": "ticket.update",
+            "ticket_id": str(self.id),
+            "status": self.status,
+            "customers_ahead": self.customers_ahead,
+        }
+        async_to_sync(channel_layer.group_send)(
+            f"ticket_{self.id}",  # Group name, e.g., unique to this ticket or service
+            {"type": "ticket_update", "data": data},
+        )
