@@ -254,11 +254,11 @@ class ManagerUserView(generics.RetrieveUpdateAPIView):
 
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
-        if instance.role not in allowed_roles:
-            return Response(
-                {"detail": _("You are not authorized to change the role.")},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        # if instance.role not in allowed_roles:
+        #     return Response(
+        #         {"detail": _("You are not authorized to change the role.")},
+        #         status=status.HTTP_403_FORBIDDEN,
+        #     )
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)

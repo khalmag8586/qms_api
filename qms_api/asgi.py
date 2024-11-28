@@ -25,12 +25,7 @@ from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "qms_api.settings")
 
-# application = ProtocolTypeRouter(
-#     {
-#         "http": get_asgi_application(),
-#         "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
-#     }
-# )
+
 application = ProtocolTypeRouter(
     {
         "http": get_asgi_application(),
