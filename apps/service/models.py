@@ -28,3 +28,16 @@ class Service(models.Model):
         blank=True,
         null=True,
     )
+     # New Fields
+    cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    vat = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)  # VAT default to 5%
+    final_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Calculate final cost as cost + VAT
+        if self.cost is not None:
+            self.final_cost = self.cost + (self.cost * (self.vat / 100))
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name or self.service_symbol

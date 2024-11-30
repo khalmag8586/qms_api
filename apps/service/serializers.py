@@ -27,6 +27,9 @@ class ServiceSerializer(serializers.ModelSerializer):
             "name_ar",
             "service_symbol",
             "description",
+            "cost",
+            "vat",
+            "final_cost",
             "created_at",
             "created_by",
             "created_by_user_name",
@@ -37,7 +40,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             "updated_by_user_name_ar",
             "is_active",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "final_cost"]
 
     def get_created_at(self, obj):
         return obj.created_at.strftime("%Y-%m-%d")

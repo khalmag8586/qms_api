@@ -45,6 +45,8 @@ from user.serializers import (
     UserGenderChoiceSerializer,
 )
 
+from apps.counter.models import Counter  # Import the Counter model
+
 from user.filters import UserFilter
 
 from qms_api.pagination import StandardResultsSetPagination
@@ -88,6 +90,11 @@ class LoginView(APIView):
         user_permissions_names = list(
             user.user_permissions.values_list("codename", flat=True)
         )
+        # Retrieve all counters where the user is assigned as an employee
+        counters = Counter.objects.filter(employee=user, is_active=True, is_deleted=False)
+
+        # Collect the counter IDs and numbers
+        counter_info = [{"id": str(counter.id), "number": counter.number} for counter in counters]
 
         response.data = {
             "identifier": (
@@ -97,6 +104,7 @@ class LoginView(APIView):
             "user_permissions": user_permissions_names,
             "name": user.name,
             "is_staff": user.is_staff,
+            "counters": counter_info,  # Include counter IDs and numbers
             "access_token": str(refresh.access_token),
             # "refresh_token": str(refresh),
         }

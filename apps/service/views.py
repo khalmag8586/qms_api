@@ -1,14 +1,16 @@
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import ValidationError
 
+# from django.core.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework.exceptions import ValidationError
+
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import (
@@ -34,14 +36,18 @@ class ServiceCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # lowercase the user's name before saving
+        # Validate the uniqueness of the service_symbol
+        service_symbol = serializer.validated_data.get("service_symbol", "").upper()
+
+        if Service.objects.filter(service_symbol=service_symbol).exists():
+            raise ValidationError({"detail": _("This service symbol already exists.")})
+
+        # Process and save the service
         name = serializer.validated_data.get("name", "")
-        service_symbol = serializer.validated_data.get("service_symbol", "")
         capitalized_name = name.lower()
-        upper_service_symbol = service_symbol.upper()
         serializer.save(
             name=capitalized_name,
-            service_symbol=upper_service_symbol,
+            service_symbol=service_symbol,
             created_by=self.request.user,
             updated_by=self.request.user,
         )
@@ -272,11 +278,19 @@ class AvailableSymbolsView(APIView):
         # Get all existing symbols
         existing_symbols = Service.objects.values_list("service_symbol", flat=True)
 
+        # # Generate available letters by excluding existing symbols
+        # available_letters = [
+        #     chr(i) for i in range(65, 91) if chr(i) not in existing_symbols
+        # ]
+
+        # return Response(
+        #     {"available_symbols": available_letters}, status=status.HTTP_200_OK
+        # )
         # Generate available letters by excluding existing symbols
         available_letters = [
-            chr(i) for i in range(65, 91) if chr(i) not in existing_symbols
+            {"title": chr(i), "value": chr(i)}
+            for i in range(65, 91)
+            if chr(i) not in existing_symbols
         ]
 
-        return Response(
-            {"available_symbols": available_letters}, status=status.HTTP_200_OK
-        )
+        return Response(available_letters, status=status.HTTP_200_OK)
