@@ -20,7 +20,7 @@ from apps.ticket.serializers import (
 )
 
 from qms_api.pagination import StandardResultsSetPagination
-
+from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
 from apps.counter.models import Counter
 
 
@@ -99,7 +99,9 @@ class TicketListView(generics.ListAPIView):
     serializer_class = TicketSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "ticket.view_ticket"
+
     pagination_class = StandardResultsSetPagination
 
 
@@ -118,7 +120,9 @@ class CallNextCustomerView(generics.UpdateAPIView):
     queryset = Ticket.objects.all()
     serializer_class = CallNextCustomerSerializer  # Define the serializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "ticket.change_ticket"
+
 
     def update(self, request, *args, **kwargs):
         # # Get the logged-in user
@@ -199,7 +203,9 @@ class CallNextCustomerView(generics.UpdateAPIView):
 class TicketRedirectToAnotherCounter(generics.UpdateAPIView):
     serializer_class = TicketRedirectSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "ticket.change_ticket"
+
 
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -240,5 +246,7 @@ class TicketInCounter(generics.ListAPIView):
     queryset = Ticket.objects.filter(status="in_progress")
     serializer_class = TicketSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "ticket.view_ticket"
+
     pagination_class = StandardResultsSetPagination

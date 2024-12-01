@@ -29,11 +29,14 @@ from apps.service.serializers import (
     ServiceDialogSerializer,
 )
 
+from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
+
 
 class ServiceCreateView(generics.CreateAPIView):
     serializer_class = ServiceSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.add_service"
 
     def perform_create(self, serializer):
         # Validate the uniqueness of the service_symbol
@@ -67,7 +70,8 @@ class ServiceListView(generics.ListAPIView):
     queryset = Service.objects.filter(is_deleted=False)
     serializer_class = ServiceSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_codename = "service.view_service"
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["name", "name_ar", "service_symbol"]
@@ -78,7 +82,8 @@ class DeletedServiceListView(generics.ListAPIView):
     queryset = Service.objects.filter(is_deleted=True)
     serializer_class = ServiceSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.view_service"
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["name", "name_ar", "service_symbol"]
@@ -88,7 +93,8 @@ class DeletedServiceListView(generics.ListAPIView):
 class ServiceRetrieveView(generics.RetrieveAPIView):
     serializer_class = ServiceSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.change_service"
     lookup_field = "id"
 
     def get_object(self):
@@ -111,7 +117,8 @@ class ActiveServiceListView(generics.ListAPIView):
 class ServiceChangeActiveView(generics.UpdateAPIView):
     serializer_class = ServiceActiveSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.change_service"
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
@@ -141,7 +148,9 @@ class ServiceChangeActiveView(generics.UpdateAPIView):
 class ServiceUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = ServiceSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.change_service"
+
     lookup_field = "id"
 
     def get_object(self):
@@ -167,7 +176,8 @@ class ServiceUpdateView(generics.RetrieveUpdateAPIView):
 class ServiceDeleteTemporaryView(generics.UpdateAPIView):
     serializer_class = ServiceDeleteSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.change_service"
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
@@ -213,7 +223,8 @@ class ServiceRestoreView(generics.RetrieveUpdateAPIView):
 
     serializer_class = ServiceDeleteSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.change_service"
 
     def update(self, request, *args, **kwargs):
         service_ids = request.data.get("service_id", [])
@@ -251,7 +262,8 @@ class ServiceRestoreView(generics.RetrieveUpdateAPIView):
 
 class ServiceDeleteView(generics.DestroyAPIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.delete_service"
 
     def delete(self, request, *args, **kwargs):
         service_ids = request.data.get("service_id", [])
@@ -270,7 +282,8 @@ class ServiceDialogView(generics.ListAPIView):
     serializer_class = ServiceDialogSerializer
     queryset = Service.objects.filter(is_deleted=False, is_active=True)
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "service.view_service"
 
 
 class AvailableSymbolsView(APIView):
@@ -278,14 +291,6 @@ class AvailableSymbolsView(APIView):
         # Get all existing symbols
         existing_symbols = Service.objects.values_list("service_symbol", flat=True)
 
-        # # Generate available letters by excluding existing symbols
-        # available_letters = [
-        #     chr(i) for i in range(65, 91) if chr(i) not in existing_symbols
-        # ]
-
-        # return Response(
-        #     {"available_symbols": available_letters}, status=status.HTTP_200_OK
-        # )
         # Generate available letters by excluding existing symbols
         available_letters = [
             {"title": chr(i), "value": chr(i)}

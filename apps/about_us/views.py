@@ -17,12 +17,14 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.about_us.models import AboutUs
 from apps.about_us.serializers import AboutUsSerializer
-# from music_sheet.custom_permissions import IsAuthenticated
+from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
+
 
 class AboutUsCreateView(generics.CreateAPIView):
     serializer_class = AboutUsSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "about_us.add_aboutus"
 
     def perform_create(self, serializer):
         serializer.save(
@@ -71,7 +73,9 @@ class AboutUsRetrieveView(generics.RetrieveAPIView):
 class AboutUsUpdateView(generics.UpdateAPIView):
     serializer_class = AboutUsSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "about_us.change_aboutus"
+
     lookup_field = "id"
 
     def get_object(self):
@@ -96,7 +100,8 @@ class AboutUsUpdateView(generics.UpdateAPIView):
 
 class AboutUsDeleteView(generics.DestroyAPIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "about_us.delete_aboutus"
 
     def delete(self, request, *args, **kwargs):
         aboutUs_ids = request.data.get("aboutUs_id", [])

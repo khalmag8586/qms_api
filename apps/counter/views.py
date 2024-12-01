@@ -13,6 +13,7 @@ from rest_framework import (
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from qms_api.pagination import StandardResultsSetPagination
+from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
 
 from apps.counter.models import Counter
 from apps.counter.serializers import (
@@ -26,7 +27,8 @@ from apps.counter.serializers import (
 class CounterCreateView(generics.CreateAPIView):
     serializer_class = CounterSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.add_counter"
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
@@ -46,7 +48,9 @@ class CounterListView(generics.ListAPIView):
     queryset = Counter.objects.filter(is_deleted=False)
     serializer_class = CounterSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.view_counter"
+
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["number"]
@@ -57,7 +61,9 @@ class DeletedCounterListView(generics.ListAPIView):
     queryset = Counter.objects.filter(is_deleted=True)
     serializer_class = CounterSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.view_counter"
+
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["number"]
@@ -67,7 +73,9 @@ class DeletedCounterListView(generics.ListAPIView):
 class CounterRetrieveView(generics.RetrieveAPIView):
     serializer_class = CounterSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.view_counter"
+
     lookup_field = "id"
 
     def get_object(self):
@@ -80,7 +88,9 @@ class ActiveCounterListView(generics.ListAPIView):
     queryset = Counter.objects.filter(is_deleted=False, is_active=True)
     serializer_class = CounterSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.view_counter"
+
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["number"]
@@ -90,7 +100,8 @@ class ActiveCounterListView(generics.ListAPIView):
 class CounterChangeActiveView(generics.UpdateAPIView):
     serializer_class = CounterActiveSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.change_counter"
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
@@ -117,10 +128,12 @@ class CounterChangeActiveView(generics.UpdateAPIView):
         )
 
 
-class CounterUpdateView(generics.RetrieveUpdateAPIView):
+class CounterUpdateView(generics.UpdateAPIView):
     serializer_class = CounterSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.change_counter"
+
     lookup_field = "id"
 
     def get_object(self):
@@ -146,7 +159,8 @@ class CounterUpdateView(generics.RetrieveUpdateAPIView):
 class CounterDeleteTemporaryView(generics.UpdateAPIView):
     serializer_class = CounterDeleteSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.change_counter"
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
@@ -191,7 +205,8 @@ class CounterDeleteTemporaryView(generics.UpdateAPIView):
 class CounterRestoreView(generics.UpdateAPIView):
     serializer_class = CounterDeleteSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.change_counter"
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
@@ -233,7 +248,8 @@ class CounterRestoreView(generics.UpdateAPIView):
 
 class CounterDeleteView(generics.DestroyAPIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.delete_counter"
 
     def delete(self, request, *args, **kwargs):
         counter_ids = request.data.get("counter_id", [])
@@ -246,8 +262,11 @@ class CounterDeleteView(generics.DestroyAPIView):
             status=status.HTTP_204_NO_CONTENT,
         )
 
+
 class CounterDialogView(generics.ListAPIView):
-    authentication_classes=[JWTAuthentication]
-    permission_classes=[IsAuthenticated]
-    queryset=Counter.objects.filter(is_deleted=False)
-    serializer_class=CounterDialogSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.view_counter"
+
+    queryset = Counter.objects.filter(is_deleted=False)
+    serializer_class = CounterDialogSerializer
