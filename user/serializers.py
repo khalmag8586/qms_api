@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from user.models import User
+from apps.counter.models import Counter
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -21,6 +22,12 @@ class PermissionSerializer(serializers.ModelSerializer):
         fields = ["codename", "name"]
 
 
+class CounterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Counter
+        fields = ["id", "number"]
+
+
 class UserSerializer(serializers.ModelSerializer):
     # groups = GroupSerializer(many=True)
     # user_permissions = PermissionSerializer(many=True)
@@ -32,6 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
     )
     created_at = serializers.SerializerMethodField()
     updated_at = serializers.SerializerMethodField()
+    counters = serializers.SerializerMethodField()
 
     class Meta:
         model = get_user_model()
@@ -58,10 +66,11 @@ class UserSerializer(serializers.ModelSerializer):
             "cover",
             "groups",
             "user_permissions",
+            "counters",
             "is_staff",
             "is_active",
         ]
-        read_only_fields = ["id","id_num"]
+        read_only_fields = ["id", "id_num"]
         extra_kwargs = {
             # "password": {"write_only": True, "min_length": 8},
             "password": {
@@ -165,6 +174,10 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_updated_at(self, obj):
         return obj.updated_at.strftime("%Y-%m-%d")
+
+    def get_counters(self, obj):
+        counters = Counter.objects.filter(employee=obj)
+        return CounterSerializer(counters, many=True).data
 
 
 class UserDeleteSerializer(serializers.ModelSerializer):

@@ -18,7 +18,12 @@ from channels.layers import get_channel_layer
 
 from channels.layers import get_channel_layer
 
+from collections import defaultdict
+
+
 channel_layer = get_channel_layer()
+
+
 class Ticket(models.Model):
     TICKET_STATUS_CHOICES = [
         ("waiting", _("Waiting")),
@@ -26,7 +31,7 @@ class Ticket(models.Model):
         ("completed", _("Completed")),
     ]
     mobile_num_regex = RegexValidator(
-        regex="^[0-9]{9,11}$",
+        regex="^[0-9]{9,20}$",
         message=_("Entered mobile number isn't in a right format!"),
     )
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
@@ -57,7 +62,7 @@ class Ticket(models.Model):
     nationality = models.CharField(max_length=255)
     mobile_number = models.CharField(
         validators=[mobile_num_regex],
-        max_length=11,
+        max_length=20,
     )
     email = models.EmailField(max_length=255)
 
@@ -116,7 +121,7 @@ class Ticket(models.Model):
             ticket_count_today = (
                 Ticket.objects.filter(created_at__date=today_date).count() + 1
             )
-            self.number = f"{self.service.symbol}-{today_date.strftime('%Y%m%d')}-{ticket_count_today}"
+            self.number = f"{self.service.service_symbol}-{today_date.strftime('%Y%m%d')}-{ticket_count_today}"
         super().save(*args, **kwargs)
 
     # def complete_ticket(self):
@@ -136,41 +141,66 @@ class Ticket(models.Model):
     #         f"ticket_{self.id}",  # Group name, e.g., unique to this ticket or service
     #         {"type": "ticket_update", "data": data},
     #     )
+
+
+
+
+in_progress_tickets = defaultdict(list)
+
 @receiver(post_save, sender=Ticket)
 def ticket_status_updated(sender, instance, **kwargs):
-    """
-    Notify the system about ticket updates.
-    """
-    # Handle notifications when a ticket is ahead
-    if instance.status == "waiting":
-        # Fetch all tickets waiting for the counter
-        tickets = Ticket.objects.filter(counter_id=instance.counter_id, status="waiting").order_by("created_at")
-        count = tickets.count()
+    # Fetch all current in-progress tickets
+    all_in_progress_tickets = [
+        {
+            "ticket_number": t.number.split("-")[0] + "-" + t.number.split("-")[-1],
+            "counter": t.counter.number if t.counter else None,
+            "status": t.status,
+        }
+        for t in Ticket.objects.filter(status="in_progress")
+    ]
 
-        # Notify if one ticket is ahead
-        if count == 1:
-            ticket_ahead = tickets.first()
-            async_to_sync(channel_layer.group_send)(
-                "global_notifications",  # Notify all clients in global_notifications group
-                {
-                    "type": "ticket_ahead_notification",
-                    "data": {
-                        "ticket_number": ticket_ahead.number,
-                        "service_name": ticket_ahead.service_name,
-                        "customer_name": ticket_ahead.customer_name,
-                    },
-                },
-            )
-
-    # Notify tickets in progress
     if instance.status == "in_progress":
+        channel_layer = get_channel_layer()
+
+        # Extract the first and last parts of the ticket number
+        ticket_number_parts = instance.number.split("-")
+        shortened_ticket_number = f"{ticket_number_parts[0]}-{ticket_number_parts[-1]}"
+
+        # Send a message to the specific ticket's group (for TicketConsumer)
         async_to_sync(channel_layer.group_send)(
-            "tickets_in_progress",  # Notify all clients in tickets_in_progress group
+            f"ticket_{instance.id}",  # Use the ticket UUID as the group name
             {
-                "type": "send_ticket_update",
-                "message": {
-                    "ticket_number": instance.number,
-                    "counter_number": instance.counter.number if instance.counter else None,
+                "type": "ticket_notification",
+                "data": {
+                    "ticket_number": shortened_ticket_number,
+                    "counter": instance.counter.number if instance.counter else None,
+                    "message": f"Your ticket {shortened_ticket_number} is now being served.",
                 },
             },
         )
+
+        # Remove duplicate entries based on the ticket number and counter
+        unique_in_progress_tickets = {
+            (ticket["counter"], ticket["ticket_number"]): ticket
+            for ticket in all_in_progress_tickets
+        }
+
+        # Add new ticket if not already present
+        unique_in_progress_tickets[(instance.counter.number, shortened_ticket_number)] = {
+            "ticket_number": shortened_ticket_number,
+            "counter": instance.counter.number,
+            "status": instance.status,
+        }
+
+        # Convert back to a list
+        in_progress_tickets["tickets_in_progress"] = list(unique_in_progress_tickets.values())
+
+        # Send the updated tickets to the group
+        async_to_sync(channel_layer.group_send)(
+            "tickets_in_progress",  # Group for all tickets in "in_progress"
+            {
+                "type": "send_ticket_update",
+                "message": in_progress_tickets["tickets_in_progress"],  # Send full list
+            },
+        )
+    

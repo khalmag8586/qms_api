@@ -52,6 +52,7 @@ from user.filters import UserFilter
 from qms_api.pagination import StandardResultsSetPagination
 from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
 
+
 # User login view
 class LoginView(APIView):
     # Primary login view
@@ -91,10 +92,14 @@ class LoginView(APIView):
             user.user_permissions.values_list("codename", flat=True)
         )
         # Retrieve all counters where the user is assigned as an employee
-        counters = Counter.objects.filter(employee=user, is_active=True, is_deleted=False)
+        counters = Counter.objects.filter(
+            employee=user, is_active=True, is_deleted=False
+        )
 
         # Collect the counter IDs and numbers
-        counter_info = [{"id": str(counter.id), "number": counter.number} for counter in counters]
+        counter_info = [
+            {"id": str(counter.id), "number": counter.number} for counter in counters
+        ]
 
         response.data = {
             "identifier": (
@@ -442,6 +447,28 @@ class UserGenderDialogView(APIView):
 
         serializer = UserGenderChoiceSerializer(gender_choices, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UsersWithoutCounterView(generics.ListAPIView):
+    """
+    API View to list users not connected to any counter.
+    """
+
+    serializer_class = UserDialogSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "user.view_user"
+
+    def get_queryset(self):
+        # Get all users not associated with any Counter
+        User = get_user_model()
+        users_with_counters = Counter.objects.filter(
+            employee__isnull=False, is_deleted=False
+        ).values_list("employee_id", flat=True)
+        # return User.objects.exclude(id__in=users_with_counters).exclude(is_superuser=True)
+        return User.objects.exclude(
+            Q(id__in=users_with_counters) | Q(is_superuser=True) | Q(is_deleted=True)
+        )
 
 
 logger = logging.getLogger(__name__)

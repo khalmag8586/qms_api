@@ -83,7 +83,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     GENDER_CHOICES = [("male", _("Male")), ("female", _("Female"))]
 
     mobile_num_regex = RegexValidator(
-        regex="^[0-9]{9,11}$",
+        regex="^[0-9]{9,20}$",
         message=_("Entered mobile number isn't in a right format!"),
     )
     id_regex = RegexValidator(
@@ -127,7 +127,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     mobile_number = models.CharField(
         validators=[mobile_num_regex],
         unique=True,
-        max_length=11,
+        max_length=20,
     )
 
     photo = models.ImageField(

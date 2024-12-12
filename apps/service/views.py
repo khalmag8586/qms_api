@@ -281,9 +281,9 @@ class ServiceDeleteView(generics.DestroyAPIView):
 class ServiceDialogView(generics.ListAPIView):
     serializer_class = ServiceDialogSerializer
     queryset = Service.objects.filter(is_deleted=False, is_active=True)
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
-    permission_codename = "service.view_service"
+    # authentication_classes = [JWTAuthentication]
+    # permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    # permission_codename = "service.view_service"
 
 
 class AvailableSymbolsView(APIView):

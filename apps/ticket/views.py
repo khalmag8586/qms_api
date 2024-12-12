@@ -24,6 +24,75 @@ from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
 from apps.counter.models import Counter
 
 
+# class TicketCreateView(generics.CreateAPIView):
+#     serializer_class = TicketSerializer
+
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         ticket = self.perform_create(serializer)
+#         headers = self.get_success_headers(serializer.data)
+#         return Response(
+#             TicketSerializer(ticket).data,
+#             status=status.HTTP_201_CREATED,
+#             headers=headers,
+#         )
+
+#     def perform_create(self, serializer):
+#         # Here you can customize the ticket number generation logic based on your requirements
+#         # For example, you can generate the ticket number with a prefix and the current date
+#         ticket_number = self.generate_ticket_number(
+#             serializer.validated_data["service"]
+#         )
+#         return serializer.save(number=ticket_number)
+
+#     def generate_ticket_number(self, service):
+#         # Get the service symbol
+#         service_symbol = (
+#             service.service_symbol
+#         )  # Assuming 'symbol' is a field in the Service model
+
+#         # Get the current date
+#         current_date = timezone.now().strftime("%Y%m%d")  # Format: YYYYMMDD
+
+#         # Logic to generate a unique identifier (you can use anything here, like a counter)
+#         # For simplicity, let's use a sequential number starting from 1
+#         # You might want to enhance this logic based on your requirements
+#         sequential_number = self.get_next_sequential_number(service)
+
+#         # Construct the ticket number using the service symbol, current date, and sequential number
+#         ticket_number = f"{service_symbol}-{sequential_number}"
+
+#         return ticket_number
+
+#     def get_next_sequential_number(self, service):
+#         # Get the current date in YYYYMMDD format
+#         current_date = timezone.now().strftime("%Y%m%d")
+
+#         # Query to get the latest ticket number for the service on the current date
+#         latest_ticket_number = Ticket.objects.filter(
+#             service=service,
+#             created_at__date=timezone.now().date(),
+#             number__startswith=service.service_symbol + "-",
+#         ).aggregate(Max("number"))["number__max"]
+
+#         # If there are no tickets for the service on the current date, start from 1
+#         if not latest_ticket_number:
+#             return 1
+
+#         # Extract the sequential number from the latest ticket number
+#         # Format: SYMBOL-YYYYMMDD-SEQUENTIAL_NUMBER
+#         # Split the ticket number by '-' and get the last part which is the sequential number
+#         parts = latest_ticket_number.split("-")
+#         if len(parts) == 2:  # Ensure the split result contains three parts
+#             _, sequential_number = parts
+#             next_sequential_number = int(sequential_number) + 1
+#         else:
+#             # Handle the case where the latest ticket number format is incorrect
+#             next_sequential_number = 1
+
+
+#         return next_sequential_number
 class TicketCreateView(generics.CreateAPIView):
     serializer_class = TicketSerializer
 
@@ -39,63 +108,41 @@ class TicketCreateView(generics.CreateAPIView):
         )
 
     def perform_create(self, serializer):
-        # Here you can customize the ticket number generation logic based on your requirements
-        # For example, you can generate the ticket number with a prefix and the current date
         ticket_number = self.generate_ticket_number(
             serializer.validated_data["service"]
         )
         return serializer.save(number=ticket_number)
 
     def generate_ticket_number(self, service):
-        # Get the service symbol
-        service_symbol = (
-            service.service_symbol
-        )  # Assuming 'symbol' is a field in the Service model
-
-        # Get the current date
-        current_date = timezone.now().strftime("%Y%m%d")  # Format: YYYYMMDD
-
-        # Logic to generate a unique identifier (you can use anything here, like a counter)
-        # For simplicity, let's use a sequential number starting from 1
-        # You might want to enhance this logic based on your requirements
+        service_symbol = service.service_symbol
         sequential_number = self.get_next_sequential_number(service)
-
-        # Construct the ticket number using the service symbol, current date, and sequential number
         ticket_number = f"{service_symbol}-{sequential_number}"
-
         return ticket_number
 
     def get_next_sequential_number(self, service):
-        # Get the current date in YYYYMMDD format
-        current_date = timezone.now().strftime("%Y%m%d")
+        current_date = timezone.now().date()
+        latest_ticket_number = (
+            Ticket.objects.filter(
+                service=service,
+                created_at__date=current_date,
+                number__startswith=f"{service.service_symbol}-",
+            )
+            .order_by("-created_at")
+            .first()
+        )
 
-        # Query to get the latest ticket number for the service on the current date
-        latest_ticket_number = Ticket.objects.filter(
-            service=service,
-            created_at__date=timezone.now().date(),
-            number__startswith=service.service_symbol + "-",
-        ).aggregate(Max("number"))["number__max"]
-
-        # If there are no tickets for the service on the current date, start from 1
         if not latest_ticket_number:
             return 1
 
-        # Extract the sequential number from the latest ticket number
-        # Format: SYMBOL-YYYYMMDD-SEQUENTIAL_NUMBER
-        # Split the ticket number by '-' and get the last part which is the sequential number
-        parts = latest_ticket_number.split("-")
-        if len(parts) == 2:  # Ensure the split result contains three parts
-            _, sequential_number = parts
-            next_sequential_number = int(sequential_number) + 1
-        else:
-            # Handle the case where the latest ticket number format is incorrect
-            next_sequential_number = 1
-
-        return next_sequential_number
+        try:
+            sequential_number = int(latest_ticket_number.number.split("-")[-1])
+            return sequential_number + 1
+        except (IndexError, ValueError):
+            return 1
 
 
 class TicketListView(generics.ListAPIView):
-    queryset = Ticket.objects.all()
+    queryset = Ticket.objects.all().order_by("-created_at")
     serializer_class = TicketSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     authentication_classes = [JWTAuthentication]
@@ -123,44 +170,40 @@ class CallNextCustomerView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "ticket.change_ticket"
 
-
     def update(self, request, *args, **kwargs):
-        # # Get the logged-in user
-        # user = request.user
-
-        # # Get the counter ID associated with the logged-in user
-        # try:
-        #     counter_id = user.counter.id
-        # except Counter.DoesNotExist:
-        #     return Response(
-        #         {"detail": _("Counter does not exist for the logged-in user")},
-        #         status=status.HTTP_404_NOT_FOUND,
-        #     )
-
-        # Get the counter ID from the request data
         counter_id = request.data.get("counter_id")
 
-        # Logic to find the next customer based on the counter's queue and current status
+        # Validate the counter ID
+        if not counter_id:
+            return Response(
+                {"detail": _("Counter ID is required.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         next_customer = self.get_next_customer(counter_id)
 
         if next_customer:
-            # Check if there is a customer currently being served
             current_customer = self.get_current_customer(counter_id)
 
             if current_customer:
-                # Complete the current customer before moving to the next one
                 self.complete_ticket(current_customer)
 
-            # Update the next customer
-            self.update_ticket(next_customer)
+            self.update_ticket(next_customer, counter_id)
 
             return Response(
-                {"detail": _("Next customer called successfully")},
+                {
+                    "detail": _("Next customer called successfully."),
+                    "ticket_id": next_customer.id,
+                    "counter_number": (
+                        next_customer.counter.number if next_customer.counter else None
+                    ),
+                    "ticket_number": next_customer.number,
+                },
                 status=status.HTTP_200_OK,
             )
         else:
             return Response(
-                {"detail": _("No more customers in the queue")},
+                {"detail": _("No more customers in the queue.")},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -180,17 +223,24 @@ class CallNextCustomerView(generics.UpdateAPIView):
         ).first()
         return current_customer
 
-    def update_ticket(self, ticket):
+    def update_ticket(self, ticket, counter_id):
         try:
+            # Ensure the counter exists and is associated with the user
+            counter = Counter.objects.get(id=counter_id, employee=self.request.user)
+
             # Update the ticket fields after it's called
             ticket.called_at = timezone.now()
             ticket.status = "in_progress"  # Assuming 'in_progress' is the status when the ticket is being served
             ticket.served_by = self.request.user
-            ticket.counter = Counter.objects.get(employee=self.request.user)
+            ticket.counter = counter
             ticket.save()
         except Counter.DoesNotExist:
             raise ValidationError(
-                {"detail": _("Counter does not exist for the logged-in user.")}
+                {
+                    "detail": _(
+                        "Counter does not exist or is not associated with the logged-in user."
+                    )
+                }
             )
 
     def complete_ticket(self, ticket):
@@ -205,7 +255,6 @@ class TicketRedirectToAnotherCounter(generics.UpdateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "ticket.change_ticket"
-
 
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -250,3 +299,7 @@ class TicketInCounter(generics.ListAPIView):
     permission_codename = "ticket.view_ticket"
 
     pagination_class = StandardResultsSetPagination
+
+
+
+

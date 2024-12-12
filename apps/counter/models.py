@@ -9,7 +9,7 @@ from user.models import User
 
 class Counter(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
-    number = models.PositiveIntegerField()
+    number = models.PositiveIntegerField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
