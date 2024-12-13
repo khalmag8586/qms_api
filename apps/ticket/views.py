@@ -24,75 +24,6 @@ from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
 from apps.counter.models import Counter
 
 
-# class TicketCreateView(generics.CreateAPIView):
-#     serializer_class = TicketSerializer
-
-#     def create(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         ticket = self.perform_create(serializer)
-#         headers = self.get_success_headers(serializer.data)
-#         return Response(
-#             TicketSerializer(ticket).data,
-#             status=status.HTTP_201_CREATED,
-#             headers=headers,
-#         )
-
-#     def perform_create(self, serializer):
-#         # Here you can customize the ticket number generation logic based on your requirements
-#         # For example, you can generate the ticket number with a prefix and the current date
-#         ticket_number = self.generate_ticket_number(
-#             serializer.validated_data["service"]
-#         )
-#         return serializer.save(number=ticket_number)
-
-#     def generate_ticket_number(self, service):
-#         # Get the service symbol
-#         service_symbol = (
-#             service.service_symbol
-#         )  # Assuming 'symbol' is a field in the Service model
-
-#         # Get the current date
-#         current_date = timezone.now().strftime("%Y%m%d")  # Format: YYYYMMDD
-
-#         # Logic to generate a unique identifier (you can use anything here, like a counter)
-#         # For simplicity, let's use a sequential number starting from 1
-#         # You might want to enhance this logic based on your requirements
-#         sequential_number = self.get_next_sequential_number(service)
-
-#         # Construct the ticket number using the service symbol, current date, and sequential number
-#         ticket_number = f"{service_symbol}-{sequential_number}"
-
-#         return ticket_number
-
-#     def get_next_sequential_number(self, service):
-#         # Get the current date in YYYYMMDD format
-#         current_date = timezone.now().strftime("%Y%m%d")
-
-#         # Query to get the latest ticket number for the service on the current date
-#         latest_ticket_number = Ticket.objects.filter(
-#             service=service,
-#             created_at__date=timezone.now().date(),
-#             number__startswith=service.service_symbol + "-",
-#         ).aggregate(Max("number"))["number__max"]
-
-#         # If there are no tickets for the service on the current date, start from 1
-#         if not latest_ticket_number:
-#             return 1
-
-#         # Extract the sequential number from the latest ticket number
-#         # Format: SYMBOL-YYYYMMDD-SEQUENTIAL_NUMBER
-#         # Split the ticket number by '-' and get the last part which is the sequential number
-#         parts = latest_ticket_number.split("-")
-#         if len(parts) == 2:  # Ensure the split result contains three parts
-#             _, sequential_number = parts
-#             next_sequential_number = int(sequential_number) + 1
-#         else:
-#             # Handle the case where the latest ticket number format is incorrect
-#             next_sequential_number = 1
-
-
-#         return next_sequential_number
 class TicketCreateView(generics.CreateAPIView):
     serializer_class = TicketSerializer
 
@@ -289,6 +220,29 @@ class TicketRedirectToAnotherCounter(generics.UpdateAPIView):
         return Response(
             {"detail": _("Ticket redirected successfully")}, status=status.HTTP_200_OK
         )
+class TicketUpdateView(generics.RetrieveUpdateAPIView):
+    serializer_class = TicketSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "ticket.change_ticket"
+
+    lookup_field = "id"
+
+    def get_object(self):
+        ticket_id = self.request.query_params.get("ticket_id")
+        ticket = get_object_or_404(Ticket, id=ticket_id)
+        return ticket
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(
+            {"detail": _("Ticket Updated successfully")}, status=status.HTTP_200_OK
+        )
 
 
 class TicketInCounter(generics.ListAPIView):
@@ -303,3 +257,18 @@ class TicketInCounter(generics.ListAPIView):
 
 
 
+class TicketDeleteView(generics.DestroyAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "ticket.delete_ticket"
+
+    def delete(self, request, *args, **kwargs):
+        ticket_ids = request.data.get("ticket_id", [])
+        for ticket_id in ticket_ids:
+            instance = get_object_or_404(Ticket, id=ticket_id)
+            instance.delete()
+
+        return Response(
+            {"detail": _("Ticket permanently deleted successfully")},
+            status=status.HTTP_204_NO_CONTENT,
+        )

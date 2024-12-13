@@ -4,8 +4,10 @@ from apps.ticket.views import (
     TicketListView,
     TicketRetrieveView,
     CallNextCustomerView,
+    TicketUpdateView,
     TicketInCounter,
     TicketRedirectToAnotherCounter,
+    TicketDeleteView,
 )
 
 app_name = "ticket"
@@ -17,6 +19,12 @@ urlpatterns = [
     path(
         "call_next_customer/", CallNextCustomerView.as_view(), name="call_next_customer"
     ),
-    path('ticket_redirect/',TicketRedirectToAnotherCounter.as_view(),name='ticket-redirect'),
-    path('ticket_in_counter/',TicketInCounter.as_view(),name='ticket-in-counter'),
+    path(
+        "ticket_redirect/",
+        TicketRedirectToAnotherCounter.as_view(),
+        name="ticket-redirect",
+    ),
+    path("ticket_update/", TicketUpdateView.as_view(), name="ticket-update"),
+    path("ticket_in_counter/", TicketInCounter.as_view(), name="ticket-in-counter"),
+    path("ticket_delete/", TicketDeleteView.as_view(), name="ticket-delete"),
 ]
