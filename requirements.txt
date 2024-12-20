@@ -11,3 +11,4 @@ paypalrestsdk
 channels
 channels_redis
 python-decouple
+daphne
