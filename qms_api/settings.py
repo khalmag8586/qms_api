@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "apps.permissions_api",
     "apps.contact_us",
     "apps.about_us",
+    "apps.department",
     "apps.service",
     "apps.counter",
     "apps.ticket",

@@ -22,6 +22,7 @@ urlpatterns += i18n_patterns(
     path("api/users/", include("user.urls")),
     path("api/permissions/", include("apps.permissions_api.urls")),
 
+    path('api/department/',include('apps.department.urls')),
     path('api/service/',include('apps.service.urls')),
     path('api/contact_us/',include('apps.contact_us.urls')),
     path('api/about_us/',include('apps.about_us.urls')),

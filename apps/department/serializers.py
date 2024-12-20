@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from apps.counter.models import Counter
+
+from apps.department.models import Department
 
 
-class CounterSerializer(serializers.ModelSerializer):
-    # created at conf
+class DepartmentSerializer(serializers.ModelSerializer):
     created_at = serializers.SerializerMethodField()
     created_by_user_name = serializers.CharField(
         source="created_by.name", read_only=True
@@ -11,7 +11,6 @@ class CounterSerializer(serializers.ModelSerializer):
     created_by_user_name_ar = serializers.CharField(
         source="created_by.name_ar", read_only=True
     )
-    # updated at conf
     updated_at = serializers.SerializerMethodField()
     updated_by_user_name = serializers.CharField(
         source="updated_by.name", read_only=True
@@ -19,18 +18,13 @@ class CounterSerializer(serializers.ModelSerializer):
     updated_by_user_name_ar = serializers.CharField(
         source="updated_by.name_ar", read_only=True
     )
-    # employee conf
-    employee_name = serializers.CharField(source="employee.name", read_only=True)
-    employee_name_ar = serializers.CharField(source="employee.name_ar", read_only=True)
-    # service conf
-    service_name = serializers.CharField(source="service.name", read_only=True)
-    service_name_ar = serializers.CharField(source="service.name_ar", read_only=True)
 
     class Meta:
-        model = Counter
+        model = Department
         fields = [
             "id",
-            "number",
+            "name",
+            "name_ar",
             "created_at",
             "created_by",
             "created_by_user_name",
@@ -39,15 +33,17 @@ class CounterSerializer(serializers.ModelSerializer):
             "updated_by",
             "updated_by_user_name",
             "updated_by_user_name_ar",
-            "service",
-            "service_name",
-            "service_name_ar",
-            "employee",
-            "employee_name",
-            "employee_name_ar",
             "is_active",
         ]
-        read_only_fields = ["id"]
+
+    read_only_fields = [
+        "id",
+        "created_at",
+        "created_by",
+        "updated_at",
+        "updated_by",
+        "is_active",
+    ]
 
     def get_created_at(self, obj):
         return obj.created_at.strftime("%Y-%m-%d")
@@ -56,19 +52,13 @@ class CounterSerializer(serializers.ModelSerializer):
         return obj.updated_at.strftime("%Y-%m-%d")
 
 
-class CounterActiveSerializer(serializers.ModelSerializer):
+class DepartmentActiveSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Counter
+        model = Department
         fields = ["is_active"]
 
 
-class CounterDeleteSerializer(serializers.ModelSerializer):
+class DepartmentDeleteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Counter
+        model = Department
         fields = ["is_deleted"]
-
-
-class CounterDialogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Counter
-        fields = ["id", "number"]
