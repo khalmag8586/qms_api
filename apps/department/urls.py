@@ -9,6 +9,7 @@ from apps.department.views import (
     DepartmentRestoreView,
     DepartmentUpdateView,
     DepartmentDeleteView,
+    DepartmentDialogView,
 )
 
 app_name = "department"
@@ -47,5 +48,8 @@ urlpatterns = [
     ),
     path(
         "department_delete/", DepartmentDeleteView.as_view(), name="department_delete"
+    ),
+    path(
+        "department_dialog/", DepartmentDialogView.as_view(), name="department dialog"
     ),
 ]

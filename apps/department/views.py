@@ -16,6 +16,7 @@ from apps.department.serializers import (
     DepartmentSerializer,
     DepartmentActiveSerializer,
     DepartmentDeleteSerializer,
+    DepartmentDialogSerializer,
 )
 from apps.department.filters import DepartmentFilter
 
@@ -247,3 +248,9 @@ class DepartmentDeleteView(generics.DestroyAPIView):
             {"detail": _("Department permanently deleted successfully")},
             status=status.HTTP_204_NO_CONTENT,
         )
+class DepartmentDialogView(generics.ListAPIView):
+    queryset=Department.objects.filter(is_deleted=False)
+    serializer_class=DepartmentDialogSerializer
+    authentication_classes=[JWTAuthentication]
+    permission_classes=[IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "department.view_department"

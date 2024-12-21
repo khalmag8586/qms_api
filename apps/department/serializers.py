@@ -62,3 +62,9 @@ class DepartmentDeleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = ["is_deleted"]
+
+
+class DepartmentDialogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = ["id", "name", "name_ar"]

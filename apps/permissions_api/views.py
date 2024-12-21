@@ -95,7 +95,7 @@ class AssignPermissionsToUserView(generics.CreateAPIView):
 class RemovePermissionsFromGroupView(generics.UpdateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
-    permission_codename = "permissions_api.change_permission"
+    permission_codename = "permissions_api.change_group"
 
 
     def update(self, request, *args, **kwargs):
@@ -154,6 +154,16 @@ class GroupListView(generics.ListAPIView):
 
     pagination_class = StandardResultsSetPagination
 
+class GroupRetrieveView(generics.RetrieveAPIView):
+    serializer_class=GroupSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "permissions_api.view_group"
+    lookup_field = "id"
+    def get_object(self):
+        group_id = self.request.query_params.get("group_id")
+        group = get_object_or_404(Group, id=group_id)
+        return group
 
 class GroupCreateView(generics.CreateAPIView):
     serializer_class = GroupSerializer
@@ -202,7 +212,33 @@ class GroupUpdateView(generics.UpdateAPIView):
         return Response(
             {"detail": _("Group Updated successfully")}, status=status.HTTP_200_OK
         )
+class GroupUpdatePermissionsView(generics.UpdateAPIView):
+    serializer_class = GroupSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "permissions_api.change_group"
 
+    def get_object(self):
+        group_id = self.request.query_params.get("group_id")
+        group = get_object_or_404(Group, id=group_id)
+        return group
+
+    def update(self, request, *args, **kwargs):
+        # Get the group object using get_object
+        group = self.get_object()
+
+        # Get the permissions from the request body
+        permission_codenames = request.data.get("permissions", [])
+        if permission_codenames:
+            permissions = Permission.objects.filter(codename__in=permission_codenames)
+
+            # Clear existing permissions and assign new ones
+            group.permissions.set(permissions)
+
+        return Response(
+            {"detail": _("Group permissions updated successfully.")},
+            status=status.HTTP_200_OK,
+        )
 
 class GroupDeleteView(generics.DestroyAPIView):
     serializer_class = GroupSerializer

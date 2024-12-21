@@ -18,6 +18,8 @@ class ServiceSerializer(serializers.ModelSerializer):
     updated_by_user_name_ar = serializers.CharField(
         source="updated_by.name_ar", read_only=True
     )
+    department_name = serializers.CharField(source="department.name", read_only=True)
+    department_name_ar = serializers.CharField(source="department.name_ar", read_only=True)
 
     class Meta:
         model = Service
@@ -27,7 +29,10 @@ class ServiceSerializer(serializers.ModelSerializer):
             "name_ar",
             "service_symbol",
             "description",
-            "cost",
+            "gov_fee",
+            "service_fee",
+            "typing_fee",
+            "add_fee",
             "vat",
             "final_cost",
             "created_at",
@@ -39,8 +44,11 @@ class ServiceSerializer(serializers.ModelSerializer):
             "updated_by_user_name",
             "updated_by_user_name_ar",
             "is_active",
+            "department",
+            "department_name",
+            "department_name_ar",
         ]
-        read_only_fields = ["id", "final_cost"]
+        read_only_fields = ["id", "vat","final_cost"]
 
     def get_created_at(self, obj):
         return obj.created_at.strftime("%Y-%m-%d")
