@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -13,10 +14,13 @@ from django.utils import timezone
 from django.db.models import Q, Max
 
 from apps.ticket.models import Ticket
+from apps.ticket.filters import TicketFilter
 from apps.ticket.serializers import (
     TicketSerializer,
     CallNextCustomerSerializer,
     TicketRedirectSerializer,
+    TicketDialogSerializer,
+    TicketStatusDialogSerializer,
 )
 
 from qms_api.pagination import StandardResultsSetPagination
@@ -79,8 +83,9 @@ class TicketListView(generics.ListAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "ticket.view_ticket"
-
+    ordering_fields = ["number", "created_at", "customer_name", "mobile_number", "email"]
     pagination_class = StandardResultsSetPagination
+    filterset_class = TicketFilter
 
 
 class TicketRetrieveView(generics.RetrieveAPIView):
@@ -98,8 +103,9 @@ class CallNextCustomerView(generics.UpdateAPIView):
     queryset = Ticket.objects.all()
     serializer_class = CallNextCustomerSerializer  # Define the serializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
-    permission_codename = "ticket.change_ticket"
+    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    # permission_codename = "ticket.change_ticket"
 
     def update(self, request, *args, **kwargs):
         counter_id = request.data.get("counter_id")
@@ -220,6 +226,8 @@ class TicketRedirectToAnotherCounter(generics.UpdateAPIView):
         return Response(
             {"detail": _("Ticket redirected successfully")}, status=status.HTTP_200_OK
         )
+
+
 class TicketUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = TicketSerializer
     authentication_classes = [JWTAuthentication]
@@ -255,8 +263,6 @@ class TicketInCounter(generics.ListAPIView):
     pagination_class = StandardResultsSetPagination
 
 
-
-
 class TicketDeleteView(generics.DestroyAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
@@ -272,3 +278,29 @@ class TicketDeleteView(generics.DestroyAPIView):
             {"detail": _("Ticket permanently deleted successfully")},
             status=status.HTTP_204_NO_CONTENT,
         )
+
+
+class TicketDialogView(generics.ListAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "ticket.view_ticket"
+    queryset = Ticket.objects.all()
+    serializer_class = TicketDialogSerializer
+
+
+class TicketStatusDialogView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    # permission_codename = "ticket.view_ticket"
+
+    def get(self, request, *args, **kwargs):
+        # Define the gender choices here
+        gender_choices = [
+            {"value": "waiting", "display": _("Waiting")},
+            {"value": "in_progress", "display": _("In Progress")},
+            {"value": "completed", "display": _("Completed")},
+        ]
+
+        serializer = TicketStatusDialogSerializer(gender_choices, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -75,3 +75,14 @@ class TicketRedirectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
         fields = ["id", "counter"]
+
+
+class TicketDialogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = ["id", "number"]
+
+
+class TicketStatusDialogSerializer(serializers.Serializer):
+    value = serializers.CharField()
+    display = serializers.CharField()
