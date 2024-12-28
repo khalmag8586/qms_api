@@ -3,7 +3,7 @@ from django.conf import settings
 
 import uuid
 
-from apps.service.models import Service
+from apps.department.models import Department
 from user.models import User
 
 
@@ -28,8 +28,8 @@ class Counter(models.Model):
         blank=True,
         null=True,
     )
-    service = models.ForeignKey(
-        Service, on_delete=models.SET_NULL, null=True, blank=True
+    departments = models.ManyToManyField(  # Change this to ManyToManyField
+        Department, blank=True, related_name="counters"
     )
     employee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 

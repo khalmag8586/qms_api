@@ -18,6 +18,7 @@ from qms_api.custom_permissions import HasPermissionOrInGroupWithPermission
 from apps.counter.models import Counter
 from apps.counter.serializers import (
     CounterSerializer,
+    CounterDisplaySerializer,
     CounterActiveSerializer,
     CounterDeleteSerializer,
     CounterDialogSerializer,
@@ -46,7 +47,7 @@ class CounterCreateView(generics.CreateAPIView):
 
 class CounterListView(generics.ListAPIView):
     queryset = Counter.objects.filter(is_deleted=False)
-    serializer_class = CounterSerializer
+    serializer_class = CounterDisplaySerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "counter.view_counter"
@@ -59,7 +60,7 @@ class CounterListView(generics.ListAPIView):
 
 class DeletedCounterListView(generics.ListAPIView):
     queryset = Counter.objects.filter(is_deleted=True)
-    serializer_class = CounterSerializer
+    serializer_class = CounterDisplaySerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "counter.view_counter"
@@ -71,7 +72,7 @@ class DeletedCounterListView(generics.ListAPIView):
 
 
 class CounterRetrieveView(generics.RetrieveAPIView):
-    serializer_class = CounterSerializer
+    serializer_class = CounterDisplaySerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "counter.view_counter"
@@ -86,7 +87,7 @@ class CounterRetrieveView(generics.RetrieveAPIView):
 
 class ActiveCounterListView(generics.ListAPIView):
     queryset = Counter.objects.filter(is_deleted=False, is_active=True)
-    serializer_class = CounterSerializer
+    serializer_class = CounterDisplaySerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "counter.view_counter"

@@ -11,8 +11,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.utils.timezone import now
 from django.db.models import Q, Max
 
+from apps.service.models import Service
 from apps.ticket.models import Ticket
 from apps.ticket.filters import TicketFilter
 from apps.ticket.serializers import (
@@ -83,7 +85,13 @@ class TicketListView(generics.ListAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
     permission_codename = "ticket.view_ticket"
-    ordering_fields = ["number", "created_at", "customer_name", "mobile_number", "email"]
+    ordering_fields = [
+        "number",
+        "created_at",
+        "customer_name",
+        "mobile_number",
+        "email",
+    ]
     pagination_class = StandardResultsSetPagination
     filterset_class = TicketFilter
 
@@ -99,18 +107,25 @@ class TicketRetrieveView(generics.RetrieveAPIView):
         return ticket
 
 
+
 class CallNextCustomerView(generics.UpdateAPIView):
     queryset = Ticket.objects.all()
-    serializer_class = CallNextCustomerSerializer  # Define the serializer
+    serializer_class = CallNextCustomerSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    # permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
-    # permission_codename = "ticket.change_ticket"
 
     def update(self, request, *args, **kwargs):
-        counter_id = request.data.get("counter_id")
+        # counter_id = request.data.get("counter_id")
+        try:
+            counter = Counter.objects.get(employee=self.request.user)
+        except Counter.DoesNotExist:
+            return Response(
+                {"detail": _("No counter is associated with the logged-in user.")},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-        # Validate the counter ID
+        # Use the counter's ID
+        counter_id = counter.id
         if not counter_id:
             return Response(
                 {"detail": _("Counter ID is required.")},
@@ -145,16 +160,24 @@ class CallNextCustomerView(generics.UpdateAPIView):
             )
 
     def get_next_customer(self, counter_id):
-        # Logic to get the next customer based on the counter's queue and current status
-        # You might need to implement your own logic here based on your application's requirements
-        next_customer = (
-            Ticket.objects.filter(called_at__isnull=True).order_by("created_at").first()
-        )
-        return next_customer
+        try:
+            counter = Counter.objects.prefetch_related("departments").get(id=counter_id)
+            services = Service.objects.filter(department__in=counter.departments.all())
+            today = now().date()
+            next_customer = (
+                Ticket.objects.filter(
+                    service__in=services,
+                    called_at__isnull=True,
+                    created_at__date=today,
+                )
+                .order_by("created_at")
+                .first()
+            )
+            return next_customer
+        except Counter.DoesNotExist:
+            raise ValidationError({"detail": _("Counter does not exist.")})
 
     def get_current_customer(self, counter_id):
-        # Logic to get the current customer being served at the counter
-        # You might need to implement your own logic here based on your application's requirements
         current_customer = Ticket.objects.filter(
             Q(counter__employee=self.request.user) & Q(status="in_progress")
         ).first()
@@ -162,12 +185,9 @@ class CallNextCustomerView(generics.UpdateAPIView):
 
     def update_ticket(self, ticket, counter_id):
         try:
-            # Ensure the counter exists and is associated with the user
             counter = Counter.objects.get(id=counter_id, employee=self.request.user)
-
-            # Update the ticket fields after it's called
             ticket.called_at = timezone.now()
-            ticket.status = "in_progress"  # Assuming 'in_progress' is the status when the ticket is being served
+            ticket.status = "in_progress"
             ticket.served_by = self.request.user
             ticket.counter = counter
             ticket.save()
@@ -181,9 +201,7 @@ class CallNextCustomerView(generics.UpdateAPIView):
             )
 
     def complete_ticket(self, ticket):
-        """Mark a ticket as completed"""
         ticket.status = "completed"
-
         ticket.save()
 
 
