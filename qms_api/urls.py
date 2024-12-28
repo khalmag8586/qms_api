@@ -28,6 +28,7 @@ urlpatterns += i18n_patterns(
     path('api/about_us/',include('apps.about_us.urls')),
     path('api/counter/',include('apps.counter.urls')),
     path('api/ticket/',include('apps.ticket.urls')),
+    path('api/PRO/',include('apps.PRO.urls')),
     path('api/rating/',include('apps.rating.urls')),
 )
 

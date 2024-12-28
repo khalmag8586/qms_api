@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "apps.service",
     "apps.counter",
     "apps.ticket",
+    "apps.PRO",
     "apps.rating",
 ]
 
