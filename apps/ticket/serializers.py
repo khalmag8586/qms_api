@@ -10,7 +10,8 @@ class TicketSerializer(serializers.ModelSerializer):
     redirect_to_number = serializers.CharField(
         source="redirect_to.number", read_only=True
     )
-    counter_number = serializers.CharField(source="counter.number", read_only=True)
+    # counter_number = serializers.CharField(source="counter.number", read_only=True)
+    counter_number = serializers.SerializerMethodField()
     called_at = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
 
@@ -65,6 +66,26 @@ class TicketSerializer(serializers.ModelSerializer):
 
     def get_created_at(self, obj):
         return obj.created_at.strftime("%Y-%m-%d")
+
+    def get_counter_number(self, obj):
+        return obj.counter.number if obj.counter else "NA"
+
+    def to_representation(self, instance):
+        """Override to replace null values with 'NA'."""
+        representation = super().to_representation(instance)
+        fields_to_replace = [
+            "counter",
+            "called_at",
+            "hold_reason",
+            "served_by",
+            "redirect_to",
+        ]
+
+        for field in fields_to_replace:
+            if representation[field] is None:
+                representation[field] = "NA"
+
+        return representation
 
 
 class CallNextCustomerSerializer(serializers.Serializer):

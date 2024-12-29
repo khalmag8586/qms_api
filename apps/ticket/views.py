@@ -107,7 +107,6 @@ class TicketRetrieveView(generics.RetrieveAPIView):
         return ticket
 
 
-
 class CallNextCustomerView(generics.UpdateAPIView):
     queryset = Ticket.objects.all()
     serializer_class = CallNextCustomerSerializer
@@ -304,6 +303,13 @@ class TicketDialogView(generics.ListAPIView):
     permission_codename = "ticket.view_ticket"
     queryset = Ticket.objects.all()
     serializer_class = TicketDialogSerializer
+
+
+class TicketInProgressDialogView(generics.ListAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = TicketDialogSerializer
+    queryset = Ticket.objects.filter(status="in_progress")
 
 
 class TicketStatusDialogView(APIView):
