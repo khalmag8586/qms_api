@@ -305,13 +305,13 @@ class TicketDialogView(generics.ListAPIView):
     serializer_class = TicketDialogSerializer
 
 
-class TicketInProgressDialogView(generics.ListAPIView):
+class TicketInProgressTodayDialogView(generics.ListAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = TicketDialogSerializer
-    queryset = Ticket.objects.filter(status="in_progress")
-
-
+    def get_queryset(self):
+        today = now().date()  # Get the current date
+        return Ticket.objects.filter(status="in_progress", created_at__date=today)
 class TicketStatusDialogView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]

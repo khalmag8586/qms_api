@@ -9,7 +9,7 @@ from apps.ticket.views import (
     TicketRedirectToAnotherCounter,
     TicketDeleteView,
     TicketDialogView,
-    TicketInProgressDialogView,
+    TicketInProgressTodayDialogView,
     TicketStatusDialogView,
 )
 
@@ -33,7 +33,7 @@ urlpatterns = [
     path("ticket_dialog/", TicketDialogView.as_view(), name="ticket-dialog"),
     path(
         "ticket_in_progress_dialog/",
-        TicketInProgressDialogView.as_view(),
+        TicketInProgressTodayDialogView.as_view(),
         name="ticket-in-progress",
     ),
     path(
