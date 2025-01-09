@@ -29,6 +29,7 @@ urlpatterns += i18n_patterns(
     path('api/counter/',include('apps.counter.urls')),
     path('api/ticket/',include('apps.ticket.urls')),
     path('api/PRO/',include('apps.PRO.urls')),
+    path('api/invoice/',include('apps.invoice.urls')),
     path('api/rating/',include('apps.rating.urls')),
 )
 

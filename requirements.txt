@@ -12,3 +12,6 @@ channels
 channels_redis
 python-decouple
 daphne
+reportlab
+arabic-reshaper python-bidi
+python-barcode

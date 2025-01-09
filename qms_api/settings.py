@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.counter",
     "apps.ticket",
     "apps.PRO",
+    "apps.invoice",
     "apps.rating",
 ]
 
@@ -132,6 +133,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "5/minute",  # Allow 5 requests per minute per user
+    }
 }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=43500),
