@@ -30,15 +30,14 @@ class CounterDisplaySerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source="employee.name", read_only=True)
     employee_name_ar = serializers.CharField(source="employee.name_ar", read_only=True)
 
-    departments = SimpleDepartmentSerializer(
-        many=True,  read_only=True
-    )
+    departments = SimpleDepartmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Counter
         fields = [
             "id",
             "number",
+            "counter_type",
             "created_at",
             "created_by",
             "created_by_user_name",
@@ -99,12 +98,12 @@ class CounterSerializer(serializers.ModelSerializer):
         queryset=Department.objects.all(), many=True, write_only=True
     )
 
-
     class Meta:
         model = Counter
         fields = [
             "id",
             "number",
+            "counter_type",
             "created_at",
             "created_by",
             "created_by_user_name",
@@ -157,3 +156,8 @@ class CounterDialogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Counter
         fields = ["id", "number"]
+
+
+class CounterTypeChoiceSerializer(serializers.Serializer):
+    value = serializers.CharField()
+    display = serializers.CharField()

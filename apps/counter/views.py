@@ -6,6 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import (
     generics,
     status,
@@ -22,6 +23,7 @@ from apps.counter.serializers import (
     CounterActiveSerializer,
     CounterDeleteSerializer,
     CounterDialogSerializer,
+    CounterTypeChoiceSerializer,
 )
 
 
@@ -271,3 +273,19 @@ class CounterDialogView(generics.ListAPIView):
 
     queryset = Counter.objects.filter(is_deleted=False)
     serializer_class = CounterDialogSerializer
+
+
+class CounterTypeDialogView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionOrInGroupWithPermission]
+    permission_codename = "counter.view_counter"
+
+    def get(self, request, *args, **kwargs):
+        # Define the counter choices here
+        gender_choices = [
+            {"value": "counter", "display": _("Counter")},
+            {"value": "cashier", "display": _("Cashier")},
+        ]
+
+        serializer = CounterTypeChoiceSerializer(gender_choices, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

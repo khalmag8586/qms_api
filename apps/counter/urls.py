@@ -11,6 +11,7 @@ from apps.counter.views import (
     CounterRestoreView,
     CounterDeleteView,
     CounterDialogView,
+    CounterTypeDialogView,
 )
 
 app_name = "counter"
@@ -40,5 +41,6 @@ urlpatterns = [
     ),
     path("counter_restore/", CounterRestoreView.as_view(), name="counter_restore"),
     path("counter_delete/", CounterDeleteView.as_view(), name="counter-delete"),
-    path('counter_dialog/',CounterDialogView.as_view(),name='counter_dialog'),
+    path("counter_dialog/", CounterDialogView.as_view(), name="counter_dialog"),
+    path("counter_types_dialog/", CounterTypeDialogView.as_view(), name="counter_types_dialog"),
 ]
